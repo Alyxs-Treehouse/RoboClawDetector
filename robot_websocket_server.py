@@ -28,11 +28,9 @@ class RobotWebSocketServer:
         self.servo_controller = None
         if enable_servo:
             self.servo_controller = ServoController(servo_port, servo_baudrate)
-            if self.servo_controller.connect():
-                print("✓ 舵机控制器已启用")
-            else:
-                print("✗ 舵机控制器连接失败，仅使用虚拟渲染")
-                self.servo_controller = None
+            # 不在启动时打开串口——由 move_all_joints 每次独立打开/关闭
+            # 这样可以避免 macOS 上双重串口连接的冲突
+            print(f"✓ 舵机控制器已配置 (端口: {servo_port}, 每次发送时独立连接)")
         
         # 当前状态
         self.current_angles = {
@@ -299,14 +297,24 @@ class RobotWebSocketServer:
         self.move_duration = duration
         self.move_start_time = time.time()
         
-        # 发送命令到真实舵机
+        # 将舵机命令放入队列，由主线程执行（避免跨线程串口写入问题）
         if self.servo_controller:
-            print("发送到舵机:")
             duration_ms = int(duration * 1000)
-            self.servo_controller.move_all_joints(target_angles, duration_ms)
+            self.command_queue.put(('move_joints', target_angles.copy(), duration_ms))
     
     def update_movement(self):
         """更新运动状态（在主线程的渲染循环中调用）"""
+        # 处理来自WebSocket线程的舵机命令队列
+        while not self.command_queue.empty():
+            try:
+                cmd = self.command_queue.get_nowait()
+                if cmd[0] == 'move_joints' and self.servo_controller:
+                    angles, duration_ms = cmd[1], cmd[2]
+                    print("发送到舵机 (主线程):")
+                    self.servo_controller.move_all_joints(angles, duration_ms)
+            except queue.Empty:
+                break
+        
         if not self.is_moving:
             return
         

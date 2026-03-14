@@ -270,6 +270,32 @@
             font-size: 13px;
             border: 1px dashed #cbd5e1;
         }
+
+        .joint-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .joint-row input[type="range"] {
+            flex: 1;
+        }
+
+        .step-btn {
+            width: 36px !important;
+            min-width: 36px;
+            padding: 6px 0 !important;
+            margin: 0 !important;
+            font-size: 16px !important;
+            font-weight: bold;
+            border-radius: 6px !important;
+            text-align: center;
+        }
+
+        .send-btn {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
@@ -329,34 +355,56 @@
             </div>
         </div>
 
-        <div class="virtual-control" id="virtualControl" style="display: none;">
+        <div class="virtual-control" id="virtualControl">
             <h3>
                 🎛️ 虚拟示教器 (直接关节控制)
                 <button onclick="recordFrame()" class="record-btn" style="width: auto; padding: 5px 15px; margin: 0; font-size: 14px;">⏺ 记录当前帧</button>
             </h3>
             
             <div class="joint-slider-group">
-                <label><span>底座旋转 (Joint 1)</span> <span id="val_j1">0.00°</span></label>
-                <input type="range" id="slider_j1" min="-135" max="135" value="0" step="1" oninput="updateJoint(1, this.value)">
+                <label><span>底座旋转 (Joint 1)</span> <span id="val_j1">0°</span></label>
+                <div class="joint-row">
+                    <button class="step-btn" onclick="stepJoint(1, -5)">-</button>
+                    <input type="range" id="slider_j1" min="-135" max="135" value="0" step="5" onchange="onSliderRelease(1, this.value)" oninput="previewJoint(1, this.value)">
+                    <button class="step-btn" onclick="stepJoint(1, 5)">+</button>
+                </div>
             </div>
             <div class="joint-slider-group">
-                <label><span>肩部俯仰 (Joint 2)</span> <span id="val_j2">0.00°</span></label>
-                <input type="range" id="slider_j2" min="-135" max="135" value="0" step="1" oninput="updateJoint(2, this.value)">
+                <label><span>肩部俯仰 (Joint 2)</span> <span id="val_j2">0°</span></label>
+                <div class="joint-row">
+                    <button class="step-btn" onclick="stepJoint(2, -5)">-</button>
+                    <input type="range" id="slider_j2" min="-135" max="135" value="0" step="5" onchange="onSliderRelease(2, this.value)" oninput="previewJoint(2, this.value)">
+                    <button class="step-btn" onclick="stepJoint(2, 5)">+</button>
+                </div>
             </div>
             <div class="joint-slider-group">
-                <label><span>肘部俯仰 (Joint 3)</span> <span id="val_j3">0.00°</span></label>
-                <input type="range" id="slider_j3" min="-135" max="135" value="0" step="1" oninput="updateJoint(3, this.value)">
+                <label><span>肘部俯仰 (Joint 3)</span> <span id="val_j3">0°</span></label>
+                <div class="joint-row">
+                    <button class="step-btn" onclick="stepJoint(3, -5)">-</button>
+                    <input type="range" id="slider_j3" min="-135" max="135" value="0" step="5" onchange="onSliderRelease(3, this.value)" oninput="previewJoint(3, this.value)">
+                    <button class="step-btn" onclick="stepJoint(3, 5)">+</button>
+                </div>
             </div>
             <div class="joint-slider-group">
-                <label><span>腕部俯仰 (Joint 4)</span> <span id="val_j4">0.00°</span></label>
-                <input type="range" id="slider_j4" min="-135" max="135" value="0" step="1" oninput="updateJoint(4, this.value)">
+                <label><span>腕部俯仰 (Joint 4)</span> <span id="val_j4">0°</span></label>
+                <div class="joint-row">
+                    <button class="step-btn" onclick="stepJoint(4, -5)">-</button>
+                    <input type="range" id="slider_j4" min="-135" max="135" value="0" step="5" onchange="onSliderRelease(4, this.value)" oninput="previewJoint(4, this.value)">
+                    <button class="step-btn" onclick="stepJoint(4, 5)">+</button>
+                </div>
             </div>
             <div class="joint-slider-group">
-                <label><span>夹爪/末端旋转 (Joint 5)</span> <span id="val_j5">0.00°</span></label>
-                <input type="range" id="slider_j5" min="-135" max="135" value="0" step="1" oninput="updateJoint(5, this.value)">
+                <label><span>夹爪/末端旋转 (Joint 5)</span> <span id="val_j5">0°</span></label>
+                <div class="joint-row">
+                    <button class="step-btn" onclick="stepJoint(5, -5)">-</button>
+                    <input type="range" id="slider_j5" min="-135" max="135" value="0" step="5" onchange="onSliderRelease(5, this.value)" oninput="previewJoint(5, this.value)">
+                    <button class="step-btn" onclick="stepJoint(5, 5)">+</button>
+                </div>
             </div>
+
+            <button onclick="sendJointsCommand()" class="send-btn" id="sendJointsBtn">🚀 发送当前关节角度到机械臂</button>
             
-            <div>
+            <div style="margin-top: 15px;">
                 <label>记录的帧序列 (供 OpenClaw 使用)</label>
                 <div class="recorded-frames" id="recordedFrames">暂无记录数据...</div>
                 <button onclick="clearFrames()" style="background: #ef4444; padding: 5px; font-size: 12px; margin-top: 5px;">清空记录</button>
@@ -535,31 +583,41 @@
         // Virtual UI Controls
         let recordedData = [];
         let currentAnglesRad = { joint_1: 0, joint_2: 0, joint_3: 0, joint_4: 0, joint_5: 0 };
-        // Throttle websocket sends for smooth slider tracking
-        let lastSendTime = 0;
         
-        function updateJoint(jointNum, degreesObjValue) {
-            const degrees = parseFloat(degreesObjValue);
-            document.getElementById(`val_j${jointNum}`).textContent = degrees.toFixed(2) + '°';
-            
-            // Convert to radians for the backend
-            const radians = degrees * (Math.PI / 180);
-            currentAnglesRad[`joint_${jointNum}`] = radians;
-            
-            const now = Date.now();
-            if (now - lastSendTime > 50) { // Send max 20 times per second
-                sendJointsCommand();
-                lastSendTime = now;
-            }
+        // Preview only updates the label text (no command sent)
+        function previewJoint(jointNum, degreesValue) {
+            const degrees = parseFloat(degreesValue);
+            document.getElementById(`val_j${jointNum}`).textContent = degrees + '°';
+            currentAnglesRad[`joint_${jointNum}`] = degrees * (Math.PI / 180);
+        }
+        
+        // Fires when user RELEASES the slider
+        function onSliderRelease(jointNum, degreesValue) {
+            previewJoint(jointNum, degreesValue);
+            sendJointsCommand();
+        }
+        
+        // Step buttons for fine ±5° adjustments
+        function stepJoint(jointNum, delta) {
+            const slider = document.getElementById(`slider_j${jointNum}`);
+            let newVal = parseInt(slider.value) + delta;
+            newVal = Math.max(-135, Math.min(135, newVal));
+            slider.value = newVal;
+            previewJoint(jointNum, newVal);
+            sendJointsCommand();
         }
         
         function sendJointsCommand() {
-            if (!ws || ws.readyState !== WebSocket.OPEN) return;
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                log('✗ 未连接到服务器，无法发送关节指令', 'error');
+                return;
+            }
             const command = {
                 command: 'set_joints',
                 angles: currentAnglesRad,
-                duration: 0.1 // Short duration for real-time slider follow
+                duration: 0.5 // 500ms - give the servo enough time to move
             };
+            log(`→ 发送关节角度: J1=${(currentAnglesRad.joint_1*180/Math.PI).toFixed(0)}° J2=${(currentAnglesRad.joint_2*180/Math.PI).toFixed(0)}° J3=${(currentAnglesRad.joint_3*180/Math.PI).toFixed(0)}° J4=${(currentAnglesRad.joint_4*180/Math.PI).toFixed(0)}° J5=${(currentAnglesRad.joint_5*180/Math.PI).toFixed(0)}°`, 'info');
             ws.send(JSON.stringify(command));
         }
         
@@ -601,12 +659,7 @@
             log('已清空所有记录帧', 'info');
         }
         
-        // Ensure UI enables virtual blocks on connection
-        const originalUpdateStatus = updateStatus;
-        updateStatus = function(connected) {
-            originalUpdateStatus(connected);
-            document.getElementById('virtualControl').style.display = connected ? 'block' : 'none';
-        }
+        // (virtualControl is now always visible)
         
         // 快捷键支持
         document.addEventListener('keydown', (e) => {

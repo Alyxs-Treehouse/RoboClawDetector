@@ -82,17 +82,49 @@ class ServoController:
         ZZZ: 时间 (毫秒)
         """
         if not self.serial or not self.serial.is_open:
-            return False
+            if not self._try_reconnect():
+                return False
         
         # 构建命令字符串
         command = f"#{servo_id:03d}P{position:04d}T{duration_ms:04d}!\n"
         
         try:
             self.serial.write(command.encode())
+            self.serial.flush()
             print(f"  → 舵机{servo_id}: {position} ({duration_ms}ms)")
             return True
         except Exception as e:
-            print(f"✗ 发送命令失败: {e}")
+            print(f"✗ 发送命令失败: {e}, 尝试重连...")
+            if self._try_reconnect():
+                try:
+                    self.serial.write(command.encode())
+                    self.serial.flush()
+                    print(f"  → 舵机{servo_id}: {position} ({duration_ms}ms) [重连后]")
+                    return True
+                except Exception as e2:
+                    print(f"✗ 重连后仍然失败: {e2}")
+            return False
+    
+    def _try_reconnect(self):
+        """尝试重新连接串口"""
+        print("🔄 尝试重新连接串口...")
+        try:
+            if self.serial:
+                try:
+                    self.serial.close()
+                except:
+                    pass
+            time.sleep(0.5)
+            self.serial = serial.Serial(
+                port=self.port,
+                baudrate=self.baudrate,
+                timeout=1
+            )
+            time.sleep(0.2)
+            print(f"✓ 串口重连成功: {self.port}")
+            return True
+        except Exception as e:
+            print(f"✗ 串口重连失败: {e}")
             return False
     
     def move_joint(self, joint_name, angle_rad, duration_ms=1000):
@@ -119,12 +151,46 @@ class ServoController:
             joint_angles: 字典 {'joint_1': angle1, 'joint_2': angle2, ...}
             duration_ms: 移动时间（毫秒）
         """
+        # 为每批命令打开一个全新的串口连接
+        # 关键：禁用 DTR/RTS 以防止 ESP32 每次打开串口时复位重启
+        try:
+            ser = serial.Serial()
+            ser.port = self.port
+            ser.baudrate = self.baudrate
+            ser.timeout = 1
+            ser.dsrdtr = False
+            ser.rtscts = False
+            ser.dtr = False  # 防止 DTR 翻转触发 ESP32 复位
+            ser.open()
+            time.sleep(0.05)  # 等待串口稳定
+        except Exception as e:
+            print(f"✗ 串口打开失败: {e}")
+            return False
+        
         success = True
         for joint_name, angle in joint_angles.items():
             if joint_name in self.servo_ids:
-                if not self.move_joint(joint_name, angle, duration_ms):
+                # 反转角度（如果需要）
+                a = -angle if self.servo_reverse.get(joint_name, False) else angle
+                servo_id = self.servo_ids[joint_name]
+                servo_pos = self.angle_to_servo(a)
+                
+                command = f"#{servo_id:03d}P{servo_pos:04d}T{duration_ms:04d}!\n"
+                try:
+                    ser.write(command.encode())
+                    ser.flush()
+                    print(f"  {joint_name}: {angle:.3f} rad → servo {servo_pos}")
+                    print(f"  → 舵机{servo_id}: {servo_pos} ({duration_ms}ms)")
+                except Exception as e:
+                    print(f"✗ 发送命令失败: {e}")
                     success = False
                 time.sleep(0.002)  # 2ms延迟，足够串口发送
+        
+        try:
+            ser.close()
+        except:
+            pass
+        
         return success
     
     def test_servos(self):
