@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>机械臂WebSocket控制面板</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        
+        .status {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            margin-bottom: 30px;
+        }
+        
+        .status.connected {
+            background: #10b981;
+            color: white;
+        }
+        
+        .status.disconnected {
+            background: #ef4444;
+            color: white;
+        }
+        
+        .input-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            color: #666;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+        
+        input[type="number"], input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e5e7eb;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        input[type="number"]:focus, input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .position-inputs {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+        }
+        
+        button {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-top: 10px;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .button-group {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .button-group button {
+            margin-top: 0;
+        }
+        
+        .log {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f9fafb;
+            border-radius: 10px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .log-title {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .log-entry {
+            padding: 8px;
+            margin-bottom: 5px;
+            border-radius: 5px;
+            font-size: 14px;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .log-entry.success {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        
+        .log-entry.error {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        
+        .log-entry.info {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        
+        .current-position {
+            background: #f3f4f6;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+        
+        .current-position h3 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+        
+        .position-display {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+        
+        .position-value {
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+        }
+        
+        .position-value .label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        
+        .position-value .value {
+            font-size: 18px;
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        /* Virtual Control Styles */
+        .virtual-control {
+            margin-top: 30px;
+            background: #fdfdfd;
+            border-radius: 10px;
+            padding: 20px;
+            border: 1px solid #e5e7eb;
+        }
+
+        .virtual-control h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 18px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .joint-slider-group {
+            margin-bottom: 15px;
+        }
+
+        .joint-slider-group label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+
+        .joint-slider-group input[type="range"] {
+            width: 100%;
+            -webkit-appearance: none;
+            background: #e5e7eb;
+            height: 6px;
+            border-radius: 3px;
+            outline: none;
+        }
+
+        .joint-slider-group input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        .joint-slider-group input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        .record-btn {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            margin-top: 15px;
+        }
+        
+        .recorded-frames {
+            margin-top: 15px;
+            max-height: 150px;
+            overflow-y: auto;
+            background: #f9fafb;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            border: 1px dashed #cbd5e1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 机械臂控制面板</h1>
+        <span class="status disconnected" id="status">未连接</span>
+        
+        <div class="input-group">
+            <label>WebSocket服务器地址</label>
+            <input type="text" id="serverUrl" value="ws://localhost:8765" placeholder="ws://localhost:8765">
+        </div>
+        
+        <button onclick="connect()" id="connectBtn">连接</button>
+        
+        <div class="input-group" style="margin-top: 30px;">
+            <label>目标位置 (米)</label>
+            <div class="position-inputs">
+                <div>
+                    <input type="number" id="targetX" value="0.15" step="0.01" placeholder="X">
+                </div>
+                <div>
+                    <input type="number" id="targetY" value="0.0" step="0.01" placeholder="Y">
+                </div>
+                <div>
+                    <input type="number" id="targetZ" value="0.25" step="0.01" placeholder="Z">
+                </div>
+            </div>
+        </div>
+        
+        <div class="input-group">
+            <label>移动时间 (秒)</label>
+            <input type="number" id="duration" value="1.5" step="0.1" min="0.1" max="10">
+        </div>
+        
+        <button onclick="moveToPosition()" id="moveBtn" disabled>移动到目标位置</button>
+        
+        <div class="button-group">
+            <button onclick="getStatus()" id="statusBtn" disabled>查询状态</button>
+            <button onclick="getPosition()" id="posBtn" disabled>获取位置</button>
+        </div>
+        
+        <div class="current-position" id="currentPosition" style="display: none;">
+            <h3>当前位置</h3>
+            <div class="position-display">
+                <div class="position-value">
+                    <div class="label">X</div>
+                    <div class="value" id="currentX">-</div>
+                </div>
+                <div class="position-value">
+                    <div class="label">Y</div>
+                    <div class="value" id="currentY">-</div>
+                </div>
+                <div class="position-value">
+                    <div class="label">Z</div>
+                    <div class="value" id="currentZ">-</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="virtual-control" id="virtualControl" style="display: none;">
+            <h3>
+                🎛️ 虚拟示教器 (直接关节控制)
+                <button onclick="recordFrame()" class="record-btn" style="width: auto; padding: 5px 15px; margin: 0; font-size: 14px;">⏺ 记录当前帧</button>
+            </h3>
+            
+            <div class="joint-slider-group">
+                <label><span>底座旋转 (Joint 1)</span> <span id="val_j1">0.00°</span></label>
+                <input type="range" id="slider_j1" min="-135" max="135" value="0" step="1" oninput="updateJoint(1, this.value)">
+            </div>
+            <div class="joint-slider-group">
+                <label><span>肩部俯仰 (Joint 2)</span> <span id="val_j2">0.00°</span></label>
+                <input type="range" id="slider_j2" min="-135" max="135" value="0" step="1" oninput="updateJoint(2, this.value)">
+            </div>
+            <div class="joint-slider-group">
+                <label><span>肘部俯仰 (Joint 3)</span> <span id="val_j3">0.00°</span></label>
+                <input type="range" id="slider_j3" min="-135" max="135" value="0" step="1" oninput="updateJoint(3, this.value)">
+            </div>
+            <div class="joint-slider-group">
+                <label><span>腕部俯仰 (Joint 4)</span> <span id="val_j4">0.00°</span></label>
+                <input type="range" id="slider_j4" min="-135" max="135" value="0" step="1" oninput="updateJoint(4, this.value)">
+            </div>
+            <div class="joint-slider-group">
+                <label><span>夹爪/末端旋转 (Joint 5)</span> <span id="val_j5">0.00°</span></label>
+                <input type="range" id="slider_j5" min="-135" max="135" value="0" step="1" oninput="updateJoint(5, this.value)">
+            </div>
+            
+            <div>
+                <label>记录的帧序列 (供 OpenClaw 使用)</label>
+                <div class="recorded-frames" id="recordedFrames">暂无记录数据...</div>
+                <button onclick="clearFrames()" style="background: #ef4444; padding: 5px; font-size: 12px; margin-top: 5px;">清空记录</button>
+            </div>
+        </div>
+        
+        
+        <div class="log">
+            <div class="log-title">📋 日志</div>
+            <div id="logContent"></div>
+        </div>
+    </div>
+    
+    <script>
+        let ws = null;
+        
+        function log(message, type = 'info') {
+            const logContent = document.getElementById('logContent');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            const timestamp = new Date().toLocaleTimeString();
+            entry.textContent = `[${timestamp}] ${message}`;
+            logContent.insertBefore(entry, logContent.firstChild);
+            
+            // 限制日志条数
+            while (logContent.children.length > 50) {
+                logContent.removeChild(logContent.lastChild);
+            }
+        }
+        
+        function updateStatus(connected) {
+            const statusEl = document.getElementById('status');
+            const connectBtn = document.getElementById('connectBtn');
+            const moveBtn = document.getElementById('moveBtn');
+            const statusBtn = document.getElementById('statusBtn');
+            const posBtn = document.getElementById('posBtn');
+            
+            if (connected) {
+                statusEl.textContent = '已连接';
+                statusEl.className = 'status connected';
+                connectBtn.textContent = '断开连接';
+                moveBtn.disabled = false;
+                statusBtn.disabled = false;
+                posBtn.disabled = false;
+            } else {
+                statusEl.textContent = '未连接';
+                statusEl.className = 'status disconnected';
+                connectBtn.textContent = '连接';
+                moveBtn.disabled = true;
+                statusBtn.disabled = true;
+                posBtn.disabled = true;
+            }
+        }
+        
+        function connect() {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.close();
+                return;
+            }
+            
+            const serverUrl = document.getElementById('serverUrl').value;
+            log(`正在连接到 ${serverUrl}...`, 'info');
+            
+            ws = new WebSocket(serverUrl);
+            
+            ws.onopen = () => {
+                log('✓ 连接成功', 'success');
+                updateStatus(true);
+            };
+            
+            ws.onclose = () => {
+                log('✗ 连接断开', 'error');
+                updateStatus(false);
+            };
+            
+            ws.onerror = (error) => {
+                log('✗ 连接错误', 'error');
+                updateStatus(false);
+            };
+            
+            ws.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    handleResponse(data);
+                } catch (e) {
+                    log('✗ 解析响应失败', 'error');
+                }
+            };
+        }
+        
+        function handleResponse(data) {
+            if (data.status === 'success') {
+                log(`✓ ${data.message}`, 'success');
+                if (data.error_mm !== undefined) {
+                    log(`  误差: ${data.error_mm.toFixed(2)} mm`, 'info');
+                }
+                if (data.achieved) {
+                    updateCurrentPosition(data.achieved);
+                }
+            } else if (data.status === 'error') {
+                log(`✗ ${data.message}`, 'error');
+            } else if (data.status === 'ok') {
+                if (data.current_position) {
+                    updateCurrentPosition([
+                        data.current_position.x,
+                        data.current_position.y,
+                        data.current_position.z
+                    ]);
+                    log('✓ 状态查询成功', 'success');
+                    if (data.statistics) {
+                        log(`  总命令: ${data.statistics.total_commands}, 成功: ${data.statistics.successful_moves}, 失败: ${data.statistics.failed_moves}`, 'info');
+                    }
+                } else if (data.position) {
+                    updateCurrentPosition([
+                        data.position.x,
+                        data.position.y,
+                        data.position.z
+                    ]);
+                    log('✓ 位置查询成功', 'success');
+                }
+            }
+        }
+        
+        function updateCurrentPosition(position) {
+            document.getElementById('currentPosition').style.display = 'block';
+            document.getElementById('currentX').textContent = position[0].toFixed(3);
+            document.getElementById('currentY').textContent = position[1].toFixed(3);
+            document.getElementById('currentZ').textContent = position[2].toFixed(3);
+        }
+        
+        function moveToPosition() {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                log('✗ 未连接到服务器', 'error');
+                return;
+            }
+            
+            const x = parseFloat(document.getElementById('targetX').value);
+            const y = parseFloat(document.getElementById('targetY').value);
+            const z = parseFloat(document.getElementById('targetZ').value);
+            const duration = parseFloat(document.getElementById('duration').value);
+            
+            const command = {
+                command: 'move',
+                x: x,
+                y: y,
+                z: z,
+                duration: duration
+            };
+            
+            log(`→ 发送移动指令: [${x}, ${y}, ${z}]`, 'info');
+            ws.send(JSON.stringify(command));
+        }
+        
+        function getStatus() {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                log('✗ 未连接到服务器', 'error');
+                return;
+            }
+            
+            const command = { command: 'get_status' };
+            log('→ 查询状态', 'info');
+            ws.send(JSON.stringify(command));
+        }
+        
+        function getPosition() {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                log('✗ 未连接到服务器', 'error');
+                return;
+            }
+            
+            const command = { command: 'get_position' };
+            log('→ 查询位置', 'info');
+            ws.send(JSON.stringify(command));
+        }
+        
+        // Virtual UI Controls
+        let recordedData = [];
+        let currentAnglesRad = { joint_1: 0, joint_2: 0, joint_3: 0, joint_4: 0, joint_5: 0 };
+        // Throttle websocket sends for smooth slider tracking
+        let lastSendTime = 0;
+        
+        function updateJoint(jointNum, degreesObjValue) {
+            const degrees = parseFloat(degreesObjValue);
+            document.getElementById(`val_j${jointNum}`).textContent = degrees.toFixed(2) + '°';
+            
+            // Convert to radians for the backend
+            const radians = degrees * (Math.PI / 180);
+            currentAnglesRad[`joint_${jointNum}`] = radians;
+            
+            const now = Date.now();
+            if (now - lastSendTime > 50) { // Send max 20 times per second
+                sendJointsCommand();
+                lastSendTime = now;
+            }
+        }
+        
+        function sendJointsCommand() {
+            if (!ws || ws.readyState !== WebSocket.OPEN) return;
+            const command = {
+                command: 'set_joints',
+                angles: currentAnglesRad,
+                duration: 0.1 // Short duration for real-time slider follow
+            };
+            ws.send(JSON.stringify(command));
+        }
+        
+        function recordFrame() {
+            // Get current XYZ from UI
+            const x = document.getElementById('currentX').textContent;
+            const y = document.getElementById('currentY').textContent;
+            const z = document.getElementById('currentZ').textContent;
+            
+            const frame = {
+                xyz: [Number(x), Number(y), Number(z)],
+                angles: {
+                    j1: Number((currentAnglesRad.joint_1).toFixed(4)),
+                    j2: Number((currentAnglesRad.joint_2).toFixed(4)),
+                    j3: Number((currentAnglesRad.joint_3).toFixed(4)),
+                    j4: Number((currentAnglesRad.joint_4).toFixed(4)),
+                    j5: Number((currentAnglesRad.joint_5).toFixed(4))
+                }
+            };
+            
+            recordedData.push(frame);
+            log(`已记录帧 #${recordedData.length}: XYZ[${x}, ${y}, ${z}]`, 'success');
+            renderRecordedFrames();
+        }
+        
+        function renderRecordedFrames() {
+            const container = document.getElementById('recordedFrames');
+            if (recordedData.length === 0) {
+                container.textContent = '暂无记录数据...';
+                return;
+            }
+            container.innerHTML = `<pre>${JSON.stringify(recordedData, null, 2)}</pre>`;
+            container.scrollTop = container.scrollHeight;
+        }
+        
+        function clearFrames() {
+            recordedData = [];
+            renderRecordedFrames();
+            log('已清空所有记录帧', 'info');
+        }
+        
+        // Ensure UI enables virtual blocks on connection
+        const originalUpdateStatus = updateStatus;
+        updateStatus = function(connected) {
+            originalUpdateStatus(connected);
+            document.getElementById('virtualControl').style.display = connected ? 'block' : 'none';
+        }
+        
+        // 快捷键支持
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    moveToPosition();
+                }
+            }
+        });
+        
+        log('欢迎使用机械臂控制面板', 'info');
+    </script>
+</body>
+</html>

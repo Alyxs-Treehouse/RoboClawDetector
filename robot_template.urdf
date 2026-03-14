@@ -1,0 +1,188 @@
+<?xml version="1.0"?>
+<robot name="6dof_robot_arm">
+  
+  <!-- ========== 基座 (Base) ========== -->
+  <link name="base_link">
+    <visual>
+      <geometry>
+        <box size="0.14 0.30 0.07"/> <!-- 长14cm 宽30cm 高7cm -->
+      </geometry>
+      <origin xyz="0 0 0.035" rpy="0 0 0"/> <!-- Z轴偏移到基座中心 -->
+      <material name="gray">
+        <color rgba="0.5 0.5 0.5 1"/>
+      </material>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="0.14 0.30 0.07"/>
+      </geometry>
+      <origin xyz="0 0 0.035" rpy="0 0 0"/>
+    </collision>
+    <inertial>
+      <mass value="0.0"/> <!-- 质量 (kg) - 待填写 -->
+      <origin xyz="0 0 0.035" rpy="0 0 0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+  </link>
+
+  <!-- ========== 关节1: 底座水平旋转 (Motor 1 - Horizontal Rotation) ========== -->
+  <joint name="joint_1" type="revolute">
+    <parent link="base_link"/>
+    <child link="link_1"/>
+    <origin xyz="0.0 0.07 0.07" rpy="0 0 0"/> <!-- 位于(0, 7cm, 7cm)处 -->
+    <axis xyz="0 0 1"/> <!-- Z轴旋转（水平旋转） -->
+    <limit lower="-2.356" upper="2.356" effort="100" velocity="1.0"/> <!-- ±135度 -->
+  </joint>
+
+  <link name="link_1">
+    <visual>
+      <geometry>
+        <box size="0.11 0.11 0.055"/> <!-- 11cm x 11cm x 5.5cm -->
+      </geometry>
+      <origin xyz="0 0 0.0275" rpy="0 0 0"/> <!-- Z轴偏移到link中心 -->
+      <material name="blue">
+        <color rgba="0 0 0.8 1"/>
+      </material>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="0.11 0.11 0.055"/>
+      </geometry>
+      <origin xyz="0 0 0.0275" rpy="0 0 0"/>
+    </collision>
+    <inertial>
+      <mass value="0.0"/> <!-- 质量 (kg) - 待填写 -->
+      <origin xyz="0 0 0.0275" rpy="0 0 0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+  </link>
+
+  <!-- ========== 关节2: 肩部俯仰 (Motor 2 - Shoulder Pitch) ========== -->
+  <joint name="joint_2" type="revolute">
+    <parent link="link_1"/>
+    <child link="link_2"/>
+    <origin xyz="0.0 0.0 0.055" rpy="0 0 0"/> <!-- 位于link_1顶部 -->
+    <axis xyz="1 0 0"/> <!-- X轴旋转（前后点头） -->
+    <limit lower="-2.356" upper="2.356" effort="100" velocity="1.0"/> <!-- ±135度 -->
+  </joint>
+
+  <link name="link_2">
+    <visual>
+      <geometry>
+        <box size="0.06 0.03 0.11"/> <!-- 6cm x 3cm x 11cm (大臂) -->
+      </geometry>
+      <origin xyz="0 0 0.055" rpy="0 0 0"/> <!-- Z轴偏移到link中心 -->
+      <material name="red">
+        <color rgba="0.8 0 0 1"/>
+      </material>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="0.06 0.03 0.11"/>
+      </geometry>
+      <origin xyz="0 0 0.055" rpy="0 0 0"/>
+    </collision>
+    <inertial>
+      <mass value="0.0"/> <!-- 质量 (kg) - 待填写 -->
+      <origin xyz="0 0 0.055" rpy="0 0 0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+  </link>
+
+  <!-- ========== 关节3: 肘部俯仰 (Motor 3 - Elbow Pitch) ========== -->
+  <joint name="joint_3" type="revolute">
+    <parent link="link_2"/>
+    <child link="link_3"/>
+    <origin xyz="0.0 0.0 0.11" rpy="0 0 0"/> <!-- 位于link_2顶部 -->
+    <axis xyz="1 0 0"/> <!-- X轴旋转（前后点头） -->
+    <limit lower="-2.356" upper="2.356" effort="100" velocity="1.0"/> <!-- ±135度 -->
+  </joint>
+
+  <link name="link_3">
+    <visual>
+      <geometry>
+        <box size="0.06 0.03 0.085"/> <!-- 6cm x 3cm x 8.5cm (小臂) -->
+      </geometry>
+      <origin xyz="0 0 0.0425" rpy="0 0 0"/> <!-- Z轴偏移到link中心 -->
+      <material name="green">
+        <color rgba="0 0.8 0 1"/>
+      </material>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="0.06 0.03 0.085"/>
+      </geometry>
+      <origin xyz="0 0 0.0425" rpy="0 0 0"/>
+    </collision>
+    <inertial>
+      <mass value="0.0"/> <!-- 质量 (kg) - 待填写 -->
+      <origin xyz="0 0 0.0425" rpy="0 0 0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+  </link>
+
+  <!-- ========== 关节4: 腕部俯仰 (Motor 4 - Wrist Pitch) ========== -->
+  <joint name="joint_4" type="revolute">
+    <parent link="link_3"/>
+    <child link="link_4"/>
+    <origin xyz="0.0 0.0 0.085" rpy="0 0 0"/> <!-- 位于link_3顶部 -->
+    <axis xyz="1 0 0"/> <!-- X轴旋转（前后点头） -->
+    <limit lower="-2.356" upper="2.356" effort="50" velocity="1.0"/> <!-- ±135度 -->
+  </joint>
+
+  <link name="link_4">
+    <visual>
+      <geometry>
+        <box size="0.06 0.04 0.075"/> <!-- 6cm x 4cm x 7.5cm (腕部) -->
+      </geometry>
+      <origin xyz="0 0 0.0375" rpy="0 0 0"/> <!-- Z轴偏移到link中心 -->
+      <material name="yellow">
+        <color rgba="0.8 0.8 0 1"/>
+      </material>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="0.06 0.04 0.075"/>
+      </geometry>
+      <origin xyz="0 0 0.0375" rpy="0 0 0"/>
+    </collision>
+    <inertial>
+      <mass value="0.0"/> <!-- 质量 (kg) - 待填写 -->
+      <origin xyz="0 0 0.0375" rpy="0 0 0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+  </link>
+
+  <!-- ========== 关节5: 腕部旋转 (Motor 5 - Wrist Roll) ========== -->
+  <joint name="joint_5" type="revolute">
+    <parent link="link_4"/>
+    <child link="link_5"/>
+    <origin xyz="0.0 0.0 0.075" rpy="0 0 0"/> <!-- 位于link_4顶部 -->
+    <axis xyz="0 0 1"/> <!-- Z轴旋转（水平旋转） -->
+    <limit lower="-2.356" upper="2.356" effort="50" velocity="1.0"/> <!-- ±135度 -->
+  </joint>
+
+  <link name="link_5">
+    <visual>
+      <geometry>
+        <cylinder radius="0.025" length="0.03"/> <!-- 直径5cm(半径2.5cm) x 高3cm -->
+      </geometry>
+      <origin xyz="0 0 0.015" rpy="0 0 0"/> <!-- Z轴偏移到link中心 -->
+      <material name="orange">
+        <color rgba="1 0.5 0 1"/>
+      </material>
+    </visual>
+    <collision>
+      <geometry>
+        <cylinder radius="0.025" length="0.03"/>
+      </geometry>
+      <origin xyz="0 0 0.015" rpy="0 0 0"/>
+    </collision>
+    <inertial>
+      <mass value="0.0"/> <!-- 质量 (kg) - 待填写 -->
+      <origin xyz="0 0 0.015" rpy="0 0 0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+  </link>
+
+</robot>
