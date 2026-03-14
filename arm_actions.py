@@ -50,10 +50,16 @@ class ArmActions:
         self.MAX = 2500
         self.ANGLE_RANGE = 2.356  # ±135°
 
-        # 打开串口并保持连接
+        # 打开串口并保持连接（禁用 DTR/RTS 防止 ESP32 复位）
         print(f"🔌 连接串口 {port}...")
-        self.ser = serial.Serial(port, baudrate, timeout=0.5)
-        time.sleep(1)  # 等待 ESP32 启动
+        self.ser = serial.Serial()
+        self.ser.port = port
+        self.ser.baudrate = baudrate
+        self.ser.timeout = 0.5
+        self.ser.dtr = False
+        self.ser.rts = False
+        self.ser.open()
+        time.sleep(5)  # 等待 ESP32 启动完成
         self.ser.reset_input_buffer()
         print("✓ 串口已连接（持久连接模式）")
 
@@ -192,30 +198,36 @@ class ArmActions:
         ])
         print("✓ 指向前方完成")
 
+    def point_down(self):
+        """动作 7: 由上而下指人 — 手臂从竖直向上缓缓下压，末端指向目标"""
+        print("🤖 动作: 由上而下指人")
+        self._run_sequence([
+            # Phase 1: 手臂竖直朝上（起始姿态）
+            (self.ALL_CENTER, 800, 1.0),
+            # Phase 2: 肩部缓缓前倾，同时肘部展开，腕部保持指向前方
+            ({self.JOINT_2: 0.5, self.JOINT_3: 0.3, self.JOINT_4: -0.2}, 800, 0.8),
+            # Phase 3: 继续下压，末端指向人体高度
+            ({self.JOINT_2: 1.0, self.JOINT_3: 0.6, self.JOINT_4: 0.4}, 700, 1.5),
+        ])
+        # 保持指向姿态 1 秒后收回
+        self._run_sequence([
+            (self.ALL_CENTER, 1000, 1.2),
+        ])
+        print("✓ 由上而下指人完成")
 
-# ─── CLI 入口 ──────────────────────────────────────
-
-if __name__ == "__main__":
-    # 支持多个动作: python arm_actions.py center nod
-    action_names = sys.argv[1:] if len(sys.argv) > 1 else ["center"]
-
-    arm = ArmActions()
-
-    actions = {
-        "center": arm.center,
-        "grab_bag": arm.grab_bag,
-        "nod": arm.nod,
-        "shake_head": arm.shake_head,
-        "shrug": arm.shrug,
-        "point_forward": arm.point_forward,
-    }
-
-    for action in action_names:
-        if action in actions:
-            actions[action]()
-        else:
-            print(f"未知动作: {action}")
-            print(f"可用动作: {', '.join(actions.keys())}")
-
-    # CLI 模式下结束时断开
-    arm.disconnect()
+    def shoot(self):
+        """Recorded motion: shoot"""
+        print("🤖 动作: shoot")
+        keyframes = [
+            ({0: 1508, 1: 1500, 2: 1500, 3: 1490, 4: 1514}, 800, 0.82),
+            ({0: 1508, 1: 1500, 2: 1500, 3: 1490, 4: 1514}, 1805, 1.825),
+            ({0: 1500, 1: 1510, 2: 1500, 3: 1490, 4: 1514}, 1805, 1.825),
+            ({0: 1500, 1: 1500, 2: 1500, 3: 1490, 4: 1514}, 1804, 1.824),
+        ]
+        # Use raw positions directly
+        for positions, duration_ms, wait_sec in keyframes:
+            for sid, pos in positions.items():
+                self._send_raw(sid, pos, duration_ms)
+            time.sleep(wait_sec)
+        self._run_sequence([(self.ALL_CENTER, 800, 1.0)])
+        print("✓ shoot 完成")

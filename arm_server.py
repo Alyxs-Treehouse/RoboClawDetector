@@ -93,6 +93,8 @@ if __name__ == "__main__":
         "shrug": arm.shrug,
         "grab_bag": arm.grab_bag,
         "point_forward": arm.point_forward,
+        "point_down": arm.point_down,
+        "shoot": arm.shoot,
     }
 
     print(f"\n可用动作: {', '.join(ACTION_MAP.keys())}")
