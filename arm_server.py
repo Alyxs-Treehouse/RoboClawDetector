@@ -95,6 +95,8 @@ if __name__ == "__main__":
         "point_forward": arm.point_forward,
         "point_down": arm.point_down,
         "shoot": arm.shoot,
+        "kick": arm.kick,
+        "dance": arm.dance,
     }
 
     print(f"\n可用动作: {', '.join(ACTION_MAP.keys())}")
