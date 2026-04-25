@@ -29,7 +29,7 @@ import sys
 class ArmActions:
     """机械臂预定义动作控制器（持久串口连接）"""
 
-    def __init__(self, port='/dev/tty.usbserial-210', baudrate=115200):
+    def __init__(self, port='/dev/ttyUSB0', baudrate=115200):
         self.port = port
         self.baudrate = baudrate
 
@@ -232,42 +232,8 @@ class ArmActions:
         self._run_sequence([(self.ALL_CENTER, 800, 1.0)])
         print("✓ shoot 完成")
 
-    def kick(self):
-        """动作 8: 踢一下 — 手臂前伸，用夹头进行快速跑/弹的动作"""
-        print("🤖 动作: 踢一下")
-        # 夹爪闭合，作为"脚"
-        self._send_raw(self.GRIPPER, 1500, 500)
-        time.sleep(0.5)
-
-        self._run_sequence([
-            # Phase 1: 蓄力（手臂压低，腕部不动）
-            ({self.JOINT_2: 1.1, self.JOINT_3: 0.8, self.JOINT_4: 0.0}, 800, 0.8),
-            # Phase 2: 腕部先反向蓄力
-            ({self.JOINT_2: 1.0, self.JOINT_3: 0.7, self.JOINT_4: 0.5}, 400, 0.5),
-            # Phase 3: 踢出（腕部快速反向甩）
-            ({self.JOINT_2: 0.7, self.JOINT_3: 0.4, self.JOINT_4: -1.0}, 200, 0.8),
-            # 收回中位
-            (self.ALL_CENTER, 800, 1.0)
-        ])
-        print("✓ 踢一下完成")
-
-    def dance(self):
-        """动作 9: 跳舞 — 小幅度扭一扭"""
-        print("🤖 动作: 跳舞")
-        keyframes = []
-        for _ in range(4):
-            # 左扭（底座左转+肩微倾+腕微摆）
-            keyframes.append(({self.JOINT_1: 0.3, self.JOINT_2: -0.15, self.JOINT_4: 0.2}, 350, 0.4))
-            # 右扭
-            keyframes.append(({self.JOINT_1: -0.3, self.JOINT_2: 0.15, self.JOINT_4: -0.2}, 350, 0.4))
-        # 回中
-        keyframes.append((self.ALL_CENTER, 500, 0.6))
-        self._run_sequence(keyframes)
-        print("✓ 跳舞完成")
-
-
 if __name__ == "__main__":
-    arm = ArmActions(port='/dev/ttyUSB0')
+    arm = ArmActions()
 
     actions_to_run = sys.argv[1:] if len(sys.argv) > 1 else ["center"]
 

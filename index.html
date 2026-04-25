@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>海龟汤主持人</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>海龟汤主持人</h1>
+        <div class="chat-window" id="chat-window">
+            <div class="message bot">
+                <p>你好，我是海龟汤主持人。准备好开始了吗？你可以问我任何问题，我都会用“是”或“否”来回答，同时让机械臂做出相应动作。</p>
+            </div>
+            <div class="message bot">
+                <p>故事：一个男人走进餐厅，点了一份"海鸥汤"。喝了一口之后，他走出餐厅，回家自杀了。</p>
+            </div>
+        </div>
+        <div class="input-area">
+            <input type="text" id="user-input" placeholder="输入你的问题...">
+            <button id="send-button">发送</button>
+            <button id="voice-input-button">🎤 语音提问</button>
+        </div>
+        <div class="status-message" id="status-message"></div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
